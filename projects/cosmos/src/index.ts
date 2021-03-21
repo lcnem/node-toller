@@ -6,20 +6,24 @@ import { CosmosTxV1beta1Tx } from 'cosmos-client/openapi/api';
 
 export const allowList: AllowList = [
   {
-    path: /^\/accounts\/[.+]$/,
+    path: /^\/cosmos\/auth\/v1beta1\/accounts\/[.+]$/,
     method: 'GET',
   },
   {
-    path: /^\/node\/health$/,
+    path: /^\/cosmos\/bank\/v1beta1\/balances\/[.+]$/,
     method: 'GET',
   },
   {
-    path: /^\/node\/info$/,
+    path: /^\/cosmos\/base\/tendermint\/v1beta1\/node_info$/,
     method: 'GET',
   },
   {
-    path: /^\/transactions$/,
-    method: 'PUT',
+    path: /^\/cosmos\/base\/tendermint\/v1beta1\/syncing$/,
+    method: 'GET',
+  },
+  {
+    path: /^\/cosmos\/tx\/v1beta1\/txs$/,
+    method: 'POST',
   },
 ];
 

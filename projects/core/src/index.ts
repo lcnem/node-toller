@@ -93,6 +93,9 @@ export async function core<T extends { port: number; node_endpoint: string; pric
       }
       try {
         const { txhash, sequence, signatures } = extractHeaders(req.headers);
+        if (!txhash) {
+          throw Error('txhash is empty.');
+        }
         if (await used.isUsed(txhash)) {
           throw Error('Already used txhash.');
         }
