@@ -1,0 +1,6 @@
+port: 1000
+node_endpoint: http://localhost:3000
+addresses:
+  - input-your-address-here
+mosaic_id_hex: 6BED913FA20223F8 # symbol.xym
+price_per_byte: 1000

@@ -1,0 +1,29 @@
+{
+  "name": "node-toller-symbol",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint \"src/**/*\"",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "build": "tsc --build --clean && tsc && node bundle",
+    "preinstall": "cd ../core && npm i && npm run build"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "long": "^4.0.0",
+    "node-toller-core": "file:../core/dist",
+    "rxjs": "^6.6.6",
+    "symbol-sdk": "^1.0.0",
+    "yaml": "^1.10.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.20",
+    "@types/long": "^4.0.1",
+    "@types/yaml": "^1.9.7",
+    "jest": "^26.6.3",
+    "ts-jest": "^26.5.3"
+  }
+}
