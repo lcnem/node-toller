@@ -1,14 +1,15 @@
 import db from './db';
-
-export type SignatureType = 'ed25519' | 'secp256k1';
+import { PubKeyType } from './types';
 
 export type Usage = {
   txhash: string;
   paid: string;
   bytes: number;
   sequence: number;
-  signature_type: SignatureType;
-  public_keys: string[];
+  public_keys: {
+    type: PubKeyType;
+    value: string;
+  }[];
 };
 
 function key(txhash: string) {

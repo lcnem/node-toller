@@ -6,9 +6,11 @@ import { cosmosclient } from 'cosmos-client';
 import Long from 'long';
 import * as usage from './usage';
 import * as used from './used';
+import { AllowList, PubKeyType } from './types';
+
+export * from './types';
 
 const app = express();
-const proxy = httpProxy.createProxyServer();
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -19,8 +21,6 @@ const logger = winston.createLogger({
   defaultMeta: { service: 'user-service' },
   transports: [new winston.transports.Console()],
 });
-
-export type AllowList = { path: RegExp; method: string }[];
 
 function filter(allowList: AllowList, path: string, method: string) {
   if (path.startsWith('/node-toller')) {
@@ -46,43 +46,48 @@ function extractHeaders(headers: any) {
   };
 }
 
-function verifySignature(signatureType: usage.SignatureType, msg: Uint8Array, sig: Uint8Array, pubKey: Uint8Array) {
-  switch (signatureType) {
+function verifySignature(msg: Uint8Array, sig: Uint8Array, pubKey: { type: PubKeyType; value: string }) {
+  const key = Buffer.from(pubKey.value, 'base64');
+  switch (pubKey.type) {
     case 'ed25519':
-      return new cosmosclient.ed25519.PubKey({ key: pubKey }).verify(msg, sig);
+      return new cosmosclient.ed25519.PubKey({ key }).verify(msg, sig);
     case 'secp256k1':
-      return new cosmosclient.secp256k1.PubKey({ key: pubKey }).verify(msg, sig);
+      return new cosmosclient.secp256k1.PubKey({ key }).verify(msg, sig);
   }
 }
 
-function verifySignatures(signatureType: usage.SignatureType, msg: Uint8Array, sigs: Uint8Array[], pubKeys: Uint8Array[]) {
+function verifySignatures(msg: Uint8Array, sigs: Uint8Array[], pubKeys: { type: PubKeyType; value: string }[]) {
   if (pubKeys.length !== sigs.length) {
     throw Error('Invalid number of signatures.');
   }
   for (let i = 0; i < sigs.length; i++) {
-    if (!verifySignature(signatureType, msg, sigs[i], pubKeys[i])) {
+    if (!verifySignature(msg, sigs[i], pubKeys[i])) {
       throw Error('Invalid signature');
     }
   }
 }
 
-export async function core<T extends { port: number; price_per_byte: number }>(
+export async function core<T extends { port: number; node_endpoint: string; price_per_byte: number }>(
   allowList: AllowList,
-  signatureType: usage.SignatureType,
   readConfig: () => Promise<T>,
   getTxData: (
     config: T,
     txhash: string,
   ) => Promise<{
     amount: Long;
-    publicKeys: Uint8Array[];
+    publicKeys: {
+      type: PubKeyType;
+      value: Uint8Array;
+    }[];
   }>,
 ) {
   try {
     const config = await readConfig();
+    const proxy = httpProxy.createProxyServer({ target: config.node_endpoint });
 
     app.use(async (req, res, next) => {
       if (filter(allowList, req.path, req.method)) {
+        proxy.web(req, res);
         next();
         return;
       }
@@ -104,12 +109,7 @@ export async function core<T extends { port: number; price_per_byte: number }>(
           }
           data.sequence = sequence;
 
-          verifySignatures(
-            signatureType,
-            Buffer.from(`${txhash}${sequence}`),
-            signatures,
-            data.public_keys.map((pubKey) => Buffer.from(pubKey, 'base64')),
-          );
+          verifySignatures(Buffer.from(`${txhash}${sequence}`), signatures, data.public_keys);
 
           await usage.put(txhash, data);
         } else {
@@ -125,8 +125,7 @@ export async function core<T extends { port: number; price_per_byte: number }>(
             paid: amount.toString(),
             bytes,
             sequence: sequence,
-            signature_type: signatureType,
-            public_keys: publicKeys.map((publicKey) => Buffer.from(publicKey).toString('base64')),
+            public_keys: publicKeys.map((key) => ({ type: key.type, value: Buffer.from(key.value).toString('base64') })),
           });
         }
 
@@ -150,12 +149,7 @@ export async function core<T extends { port: number; price_per_byte: number }>(
           return;
         }
         try {
-          verifySignatures(
-            signatureType,
-            Buffer.from(`${txhash}${sequence}`),
-            signatures,
-            data.public_keys.map((pubKey) => Buffer.from(pubKey, 'base64')),
-          );
+          verifySignatures(Buffer.from(`${txhash}${sequence}`), signatures, data.public_keys);
         } catch {
           return;
         }

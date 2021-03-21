@@ -1,0 +1,7 @@
+port: 1000
+node_endpoint: http://localhost:1317
+chain_id: cosmoshub-3
+addresses:
+  - input-your-address-here
+coin_denom: uatom
+price_per_byte: 1000

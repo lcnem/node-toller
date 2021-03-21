@@ -1,6 +1,10 @@
+import Long from 'long';
+import { AllowList, core, PubKeyType } from 'node-toller-core';
+import * as config from './config';
 import {
   Address,
   AggregateTransaction,
+  Mosaic,
   Transaction,
   TransactionGroup,
   TransactionHttp,
@@ -9,9 +13,6 @@ import {
   UInt64,
   UnresolvedMosaicId,
 } from 'symbol-sdk';
-import Long from 'long';
-import { AllowList, core } from 'node-toller-core';
-import * as config from './config';
 
 export const allowList: AllowList = [
   {
@@ -43,20 +44,29 @@ function extractSentAmount(addresses: Address[], tx: Transaction) {
     const aggregateTx = tx as AggregateTransaction;
     const map = new Map<UnresolvedMosaicId, UInt64>();
     for (const innerTx of aggregateTx.innerTransactions) {
-      if (innerTx.type === TransactionType.TRANSFER) {
-        const transferTx = innerTx as TransferTransaction;
+      if (innerTx.type !== TransactionType.TRANSFER) {
+        continue;
+      }
+      const transferTx = innerTx as TransferTransaction;
 
-        if (addresses.find((address) => address.equals(transferTx.recipientAddress))) {
-          for (const mosaic of transferTx.mosaics) {
-            if (!map.has(mosaic.id)) {
-              map.set(mosaic.id, mosaic.amount);
-            } else {
-              const amount = map.get(mosaic.id)!.add(mosaic.amount);
-              map.set(mosaic.id, amount);
-            }
-          }
+      if (!addresses.find((address) => address.equals(transferTx.recipientAddress))) {
+        continue;
+      }
+      for (const mosaic of transferTx.mosaics) {
+        if (!map.has(mosaic.id)) {
+          map.set(mosaic.id, mosaic.amount);
+        } else {
+          const amount = map.get(mosaic.id)!.add(mosaic.amount);
+          map.set(mosaic.id, amount);
         }
       }
+
+      const amount: Mosaic[] = [];
+      map.forEach((value, key) => {
+        amount.push(new Mosaic(key, value));
+      });
+
+      return amount;
     }
   }
   return [];
@@ -66,16 +76,19 @@ function extractPublicKeys(tx: Transaction) {
   if (tx.type === TransactionType.TRANSFER) {
     const transferTx = tx as TransferTransaction;
 
-    return [Buffer.from(transferTx.signer!.publicKey, 'hex')];
+    return [{ type: PubKeyType.ED25519, value: Buffer.from(transferTx.signer!.publicKey, 'hex') }];
   } else if (tx.type === TransactionType.AGGREGATE_COMPLETE) {
     const aggregateTx = tx as AggregateTransaction;
 
-    return aggregateTx.cosignatures.map((cosigner) => Buffer.from(cosigner.signer.publicKey, 'hex'));
+    return aggregateTx.cosignatures.map((cosigner) => ({
+      type: PubKeyType.ED25519,
+      value: Buffer.from(cosigner.signer.publicKey, 'hex'),
+    }));
   }
   return [];
 }
 
-core(allowList, 'ed25519', config.readConfig, async (config, txhash) => {
+core(allowList, config.readConfig, async (config, txhash) => {
   const http = new TransactionHttp(config.node_endpoint);
   const tx = await http.getTransaction(txhash, TransactionGroup.Confirmed).toPromise();
   const addresses = config.addresses.map((address) => Address.createFromRawAddress(address));
