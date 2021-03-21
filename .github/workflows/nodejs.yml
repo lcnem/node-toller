@@ -1,14 +1,29 @@
 name: Node.js CI
 
-on: [pull_request]
+on: pull_request
 
 jobs:
-  build:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      symbol: ${{ steps.filter.outputs.symbol }}
+
+    steps:
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'projects/core/**'
+            symbol:
+              - 'projects/symbol/**'
+  core:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [14.x]
 
     steps:
       - uses: actions/checkout@v2
@@ -22,5 +37,35 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
-      - run: npm install
-      - run: npm run build --if-present -- --prod
+      - run: npm ci
+        working-directory: ./core
+      - run: npm run build --if-present
+        working-directory: ./core
+      - run: npm run test
+        working-directory: ./core
+
+  symbol:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm ci
+        working-directory: ./symbol
+      - run: npm run build --if-present
+        working-directory: ./symbol
+      - run: npm run test
+        working-directory: ./symbol

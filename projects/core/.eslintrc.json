@@ -10,12 +10,12 @@
     "plugin:import/errors",
     "plugin:import/warnings",
     "plugin:import/typescript",
-    "../.eslintrc.jest.json",
-    "../.eslintrc.prettier.json",
-    "../.eslintrc.typescript.json"
+    "../../.eslintrc.jest.json",
+    "../../.eslintrc.prettier.json",
+    "../../.eslintrc.typescript.json"
   ],
   "parserOptions": {
-    "project": "symbol/tsconfig.json",
+    "project": "core/tsconfig.json",
     "sourceType": "module"
   }
 }
