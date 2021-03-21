@@ -15,7 +15,7 @@
     "../../.eslintrc.typescript.json"
   ],
   "parserOptions": {
-    "project": "core/tsconfig.json",
+    "project": "projects/core/tsconfig.json",
     "sourceType": "module"
   }
 }

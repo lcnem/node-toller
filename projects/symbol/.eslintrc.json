@@ -15,7 +15,7 @@
     "../../.eslintrc.typescript.json"
   ],
   "parserOptions": {
-    "project": "symbol/tsconfig.json",
+    "project": "projects/symbol/tsconfig.json",
     "sourceType": "module"
   }
 }
