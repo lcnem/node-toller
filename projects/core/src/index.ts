@@ -107,7 +107,7 @@ export async function core<T extends { port: number; node_endpoint: string; pric
           if (data.sequence > sequence) {
             throw Error('Invalid sequence.');
           }
-          data.sequence = sequence;
+          data.sequence = sequence + 1;
 
           verifySignatures(Buffer.from(`${txhash}${sequence}`), signatures, data.public_keys);
 
