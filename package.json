@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "bundle:cosmos": "docker build . -f ./projects/cosmos/Dockerfile -t lcnem/node-toller-cosmos",
+    "bundle:symbol": "docker build . -f ./projects/symbol/Dockerfile -t lcnem/node-toller-symbol"
   },
   "author": "",
   "license": "ISC",

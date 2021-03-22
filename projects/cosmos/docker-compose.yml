@@ -1,0 +1,12 @@
+version: "3"
+services:
+  node-toller-cosmos:
+    image: lcnem/node-toller-cosmos
+    ports:
+      - 1000:1000
+      - 1317:1317
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - ./config.yaml:/root/app/config.yaml
+    command: node app
+    restart: always
