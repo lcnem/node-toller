@@ -1,4 +1,6 @@
 port: 1000
+tls_key: /etc/letsencrypt/live/example.com/privkey.pem
+tls_cert: /etc/letsencrypt/live/example.com/cert.pem
 node_endpoint: http://localhost:3000
 addresses:
   - input-your-address-here

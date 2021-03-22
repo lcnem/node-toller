@@ -1,4 +1,6 @@
 port: 1000
+tls_key: /etc/letsencrypt/live/example.com/privkey.pem
+tls_cert: /etc/letsencrypt/live/example.com/cert.pem
 node_endpoint: http://localhost:1317
 chain_id: cosmoshub-3
 addresses:

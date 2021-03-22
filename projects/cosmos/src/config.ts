@@ -1,14 +1,12 @@
 import YAML from 'yaml';
 import * as fs from 'fs';
 import { cosmosclient, rest } from 'cosmos-client';
+import { ConfigCore } from 'node-toller-core';
 
-export type Config = {
-  port: number;
-  node_endpoint: string;
+export type Config = ConfigCore & {
   chain_id: string;
   addresses: string[];
   coin_denom: string;
-  price_per_byte: number;
 };
 
 export async function readConfig() {
@@ -25,11 +23,13 @@ export async function readConfig() {
   if (!config.chain_id) {
     throw Error('chain_id must be specified');
   }
+
   const sdk = new cosmosclient.CosmosSDK(config.node_endpoint, config.chain_id);
   const syncing = await rest.cosmos.tendermint.getSyncing(sdk).then((res) => res.data.syncing || false);
   if (syncing) {
     throw Error('Node is syncing');
   }
+
   if (typeof config.addresses === 'string') {
     config.addresses = [config.addresses];
   }

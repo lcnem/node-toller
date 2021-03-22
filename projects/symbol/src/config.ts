@@ -1,13 +1,11 @@
 import YAML from 'yaml';
 import * as fs from 'fs';
 import { Address, NodeHttp } from 'symbol-sdk';
+import { ConfigCore } from 'node-toller-core';
 
-export type Config = {
-  port: number;
-  node_endpoint: string;
+export type Config = ConfigCore & {
   addresses: string[];
   mosaic_id_hex: string;
-  price_per_byte: number;
 };
 
 export async function readConfig() {
@@ -21,11 +19,13 @@ export async function readConfig() {
   if (!config.node_endpoint) {
     throw Error('node_endpoint must be specified');
   }
+
   const http = new NodeHttp(config.node_endpoint);
   const health = await http.getNodeHealth().toPromise();
   if (health.apiNode === 'down') {
     throw Error('Node endpoint is in down.');
   }
+
   if (typeof config.addresses === 'string') {
     config.addresses = [config.addresses];
   }

@@ -4,9 +4,12 @@ import httpProxy from 'http-proxy';
 import onHeaders from 'on-headers';
 import { cosmosclient } from 'cosmos-client';
 import Long from 'long';
+import * as fs from 'fs';
+import * as http from 'http';
+import * as https from 'https';
 import * as usage from './usage';
 import * as used from './used';
-import { AllowList, PubKeyType } from './types';
+import { AllowList, ConfigCore, PubKeyType } from './types';
 
 export * from './types';
 
@@ -67,7 +70,7 @@ function verifySignatures(msg: Uint8Array, sigs: Uint8Array[], pubKeys: { type: 
   }
 }
 
-export async function core<T extends { port: number; node_endpoint: string; price_per_byte: number }>(
+export async function core<T extends ConfigCore>(
   allowList: AllowList,
   readConfig: () => Promise<T>,
   getTxData: (
@@ -170,7 +173,18 @@ export async function core<T extends { port: number; node_endpoint: string; pric
       next();
     });
 
-    app.listen(config.port, () => {
+    const server = (() => {
+      if (!config.tls_key || !config.tls_cert) {
+        return http.createServer(app);
+      }
+      const options = {
+        key: fs.readFileSync(config.tls_key),
+        cert: fs.readFileSync(config.tls_cert),
+      };
+      return https.createServer(options, app);
+    })();
+
+    server.listen(config.port, () => {
       logger.info(`Server starts listening port ${config.port}.`);
     });
   } catch (e) {
