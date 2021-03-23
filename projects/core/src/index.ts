@@ -70,9 +70,20 @@ function verifySignatures(msg: Uint8Array, sigs: Uint8Array[], pubKeys: { type: 
   }
 }
 
+function errorResponse(baseURL: string, error: Error) {
+  return {
+    error: error.message,
+    description: `REST api endpoint of this node is protected by Node Toller powered by LCNEM, Inc.
+Please see https://github.com/lcnem/node-toller to grasp the specification.
+You can also see ${baseURL}/node-toller to get information for passing through the protection of Node Toller powered by LCNEM, Inc.`,
+    link: `${baseURL}/node-toller`,
+  };
+}
+
 export async function core<T extends ConfigCore>(
   allowList: AllowList,
   readConfig: () => Promise<T>,
+  params: () => T,
   getTxData: (
     config: T,
     txhash: string,
@@ -139,38 +150,51 @@ export async function core<T extends ConfigCore>(
         next();
       } catch (e) {
         logger.info(`Getting a request which is unauthorized. ${e.message}`);
-        res.status(401).send(e.message);
+        res.status(401).send(errorResponse(req.baseUrl, e));
       }
     });
 
     app.use((req, res, next) => {
-      onHeaders(res, async () => {
-        if (filter(allowList, req.path, req.method)) {
-          next();
-          return;
-        }
-        const { txhash, sequence, signatures } = extractHeaders(req.headers);
-        const data = await usage.get(txhash).catch((_) => undefined);
-        if (!data) {
-          return;
-        }
-        try {
-          verifySignatures(Buffer.from(`${txhash}${sequence}`), signatures, data.public_keys);
-        } catch {
-          return;
-        }
+      try {
+        onHeaders(res, async () => {
+          if (filter(allowList, req.path, req.method)) {
+            next();
+            return;
+          }
+          const { txhash, sequence, signatures } = extractHeaders(req.headers);
+          const data = await usage.get(txhash).catch((_) => undefined);
+          if (!data) {
+            return;
+          }
+          try {
+            verifySignatures(Buffer.from(`${txhash}${sequence}`), signatures, data.public_keys);
+          } catch {
+            return;
+          }
 
-        const size = (res.getHeader('Content-Length') as number) || ((res as any)._contentLength as number);
+          const size = (res.getHeader('Content-Length') as number) || ((res as any)._contentLength as number);
 
-        data.bytes += size;
-        if (Long.fromNumber(config.price_per_byte).mul(data.bytes).gt(data.paid)) {
-          await used.put(txhash, true);
-          await usage.del(txhash);
-        } else {
-          await usage.put(txhash, data);
-        }
-      });
-      next();
+          data.bytes += size;
+          if (Long.fromNumber(config.price_per_byte).mul(data.bytes).gt(data.paid)) {
+            await used.put(txhash, true);
+            await usage.del(txhash);
+          } else {
+            await usage.put(txhash, data);
+          }
+        });
+        next();
+      } catch (e) {
+        logger.info(`An internal error has occured. ${e.message}`);
+        res.status(500).send(e.message);
+      }
+    });
+
+    app.get('/node-toller', (_, res) => {
+      res.status(200).send(params());
+    });
+
+    app.get('/node-toller/usages/{txhash}', (_, res) => {
+      res.status(200).send(params());
     });
 
     const server = (() => {
