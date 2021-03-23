@@ -29,3 +29,7 @@ After:
   |
 [Clients]
 ```
+
+## License
+
+Microsoft Reference Source Lisence.
