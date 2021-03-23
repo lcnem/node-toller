@@ -88,14 +88,8 @@ function extractPublicKeys(tx: CosmosTxV1beta1Tx) {
 }
 
 core(
-  allowList,
   config.readConfig,
-  (config) => ({
-    chain_id: config.chain_id,
-    addresses: config.addresses,
-    coin_denom: config.coin_denom,
-    price_per_byte: config.price_per_byte,
-  }),
+  allowList,
   async (config, txhash) => {
     const sdk = new cosmosclient.CosmosSDK(config.node_endpoint, config.chain_id);
     const tx = await rest.cosmos.tx.getTx(sdk, txhash).then((res) => res.data);
@@ -112,4 +106,10 @@ core(
       publicKeys: extractPublicKeys(tx.tx!),
     };
   },
+  (config) => ({
+    chain_id: config.chain_id,
+    addresses: config.addresses,
+    coin_denom: config.coin_denom,
+    price_per_byte: config.price_per_byte,
+  }),
 );

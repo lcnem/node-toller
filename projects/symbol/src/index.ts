@@ -89,13 +89,8 @@ function extractPublicKeys(tx: Transaction) {
 }
 
 core(
-  allowList,
   config.readConfig,
-  (config) => ({
-    addresses: config.addresses,
-    mosaic_id_hex: config.mosaic_id_hex,
-    price_per_byte: config.price_per_byte,
-  }),
+  allowList,
   async (config, txhash) => {
     const http = new TransactionHttp(config.node_endpoint);
     const tx = await http.getTransaction(txhash, TransactionGroup.Confirmed).toPromise();
@@ -112,4 +107,9 @@ core(
       publicKeys: extractPublicKeys(tx),
     };
   },
+  (config) => ({
+    addresses: config.addresses,
+    mosaic_id_hex: config.mosaic_id_hex,
+    price_per_byte: config.price_per_byte,
+  }),
 );

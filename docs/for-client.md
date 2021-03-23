@@ -24,3 +24,11 @@ Signatures is a string of comma separeted signatures.
 Each signatures must be encoded with base64 string (These are not hex string).
 
 The message for creating signature is `${txhash}${sequence}` which is encoded with utf-8.
+
+## API
+
+### `/node-toller`
+
+You can check information for using api which is protected from use
+
+###
