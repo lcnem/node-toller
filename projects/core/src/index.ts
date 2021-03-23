@@ -83,7 +83,7 @@ You can also see ${baseURL}/node-toller to get information for passing through t
 export async function core<T extends ConfigCore>(
   allowList: AllowList,
   readConfig: () => Promise<T>,
-  params: () => T,
+  params: (config: T) => any,
   getTxData: (
     config: T,
     txhash: string,
@@ -190,11 +190,21 @@ export async function core<T extends ConfigCore>(
     });
 
     app.get('/node-toller', (_, res) => {
-      res.status(200).send(params());
+      res.status(200).send(params(config));
     });
 
-    app.get('/node-toller/usages/{txhash}', (_, res) => {
-      res.status(200).send(params());
+    app.get('/node-toller/usages/:txhash', async (req, res) => {
+      const txhash = req.params['txhash'] || '';
+      if (!txhash) {
+        res.status(400).send('txhash is empty.');
+        return;
+      }
+      const data = await usage.get(txhash).catch((_) => undefined);
+      if (!data) {
+        res.status(404).send('Usage data not found.');
+        return;
+      }
+      res.status(200).send(data);
     });
 
     const server = (() => {

@@ -87,19 +87,29 @@ function extractPublicKeys(tx: CosmosTxV1beta1Tx) {
   return [];
 }
 
-core(allowList, config.readConfig, async (config, txhash) => {
-  const sdk = new cosmosclient.CosmosSDK(config.node_endpoint, config.chain_id);
-  const tx = await rest.cosmos.tx.getTx(sdk, txhash).then((res) => res.data);
-  const addresses = config.addresses.map((address) => cosmosclient.AccAddress.fromString(address));
+core(
+  allowList,
+  config.readConfig,
+  (config) => ({
+    chain_id: config.chain_id,
+    addresses: config.addresses,
+    coin_denom: config.coin_denom,
+    price_per_byte: config.price_per_byte,
+  }),
+  async (config, txhash) => {
+    const sdk = new cosmosclient.CosmosSDK(config.node_endpoint, config.chain_id);
+    const tx = await rest.cosmos.tx.getTx(sdk, txhash).then((res) => res.data);
+    const addresses = config.addresses.map((address) => cosmosclient.AccAddress.fromString(address));
 
-  const coins = extractSentAmount(addresses, tx.tx!);
-  const coin = coins.find((coin) => coin.denom === config.coin_denom);
-  if (!coin) {
-    throw Error('Specified coin has not been sent.');
-  }
+    const coins = extractSentAmount(addresses, tx.tx!);
+    const coin = coins.find((coin) => coin.denom === config.coin_denom);
+    if (!coin) {
+      throw Error('Specified coin has not been sent.');
+    }
 
-  return {
-    amount: Long.fromString(coin.amount!),
-    publicKeys: extractPublicKeys(tx.tx!),
-  };
-});
+    return {
+      amount: Long.fromString(coin.amount!),
+      publicKeys: extractPublicKeys(tx.tx!),
+    };
+  },
+);

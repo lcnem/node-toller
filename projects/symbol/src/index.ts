@@ -88,19 +88,28 @@ function extractPublicKeys(tx: Transaction) {
   return [];
 }
 
-core(allowList, config.readConfig, async (config, txhash) => {
-  const http = new TransactionHttp(config.node_endpoint);
-  const tx = await http.getTransaction(txhash, TransactionGroup.Confirmed).toPromise();
-  const addresses = config.addresses.map((address) => Address.createFromRawAddress(address));
+core(
+  allowList,
+  config.readConfig,
+  (config) => ({
+    addresses: config.addresses,
+    mosaic_id_hex: config.mosaic_id_hex,
+    price_per_byte: config.price_per_byte,
+  }),
+  async (config, txhash) => {
+    const http = new TransactionHttp(config.node_endpoint);
+    const tx = await http.getTransaction(txhash, TransactionGroup.Confirmed).toPromise();
+    const addresses = config.addresses.map((address) => Address.createFromRawAddress(address));
 
-  const mosaics = extractSentAmount(addresses, tx);
-  const mosaic = mosaics.find((mosaic) => mosaic.id.toHex() === config.mosaic_id_hex);
-  if (!mosaic) {
-    throw Error('Specified mosaic has not been sent.');
-  }
+    const mosaics = extractSentAmount(addresses, tx);
+    const mosaic = mosaics.find((mosaic) => mosaic.id.toHex() === config.mosaic_id_hex);
+    if (!mosaic) {
+      throw Error('Specified mosaic has not been sent.');
+    }
 
-  return {
-    amount: Long.fromString(mosaic.amount.toString()),
-    publicKeys: extractPublicKeys(tx),
-  };
-});
+    return {
+      amount: Long.fromString(mosaic.amount.toString()),
+      publicKeys: extractPublicKeys(tx),
+    };
+  },
+);
